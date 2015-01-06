@@ -1,0 +1,24 @@
+Running python with PYTHONPATH=C:\spark-1.1.0-bin-hadoop2.4\bin\..\python\lib\py4j-0.8.2.1-src.zip;C:\spark-1.1.0-bin-hadoop2.4\bin\..\python;
+
+WARNING: Running python applications through ./bin/pyspark.cmd is deprecated as of Spark 1.0.
+Use ./bin/spark-submit <python file>
+
+******************VECTORIZING: DONE********************
+******************MODEL TRAINING: DONE********************
+******************PREDICTION: DONE********************
+******************EVALUATION: DONE********************
+******************TIME CALCULATION: DONE********************
+******************RESULTS********************
+
+##############Accuracy##################
+
+Training Error (Mean Absolute Error) = 0.44506197521
+Root Mean Squared Error = 0.879710431803
+########################################
+
+##############Efficiency################
+Vectorizing Time = 0.0
+Training TIme = 65.6610000134
+Predicting TIme = 2.39199995995
+Evaluation TIme = 14.5920000076
+########################################

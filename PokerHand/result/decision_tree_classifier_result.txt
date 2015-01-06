@@ -1,0 +1,9 @@
+***DECISION TREE CLASSIFIER RESULTS***
+##############Accuracy##################
+Training Error = 0.44506197521
+Mean Squared Error = 0.879710431803
+##############Efficiency################
+Vectorizing Time = 0.0
+Training TIme = 65.6610000134
+Predicting TIme = 2.39199995995
+Evaluation TIme = 14.5920000076

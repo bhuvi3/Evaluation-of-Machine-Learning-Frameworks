@@ -1,0 +1,9 @@
+***SEQUENTIAL NAIVE BAYES CLASSIFIER RESULTS***
+##############Accuracy##################
+Training Error = 0.500479808077
+Mean Squared Error = 1.00365186851
+##############Efficiency################
+Vectorizing Time = 12.6150000095
+Training TIme = 0.444999933243
+Predicting TIme = 0.021999835968
+Evaluation TIme = 0.0120000839233
