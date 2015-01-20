@@ -1,51 +1,42 @@
-from sklearn import tree
-import numpy as np
+from pyspark import SparkConf, SparkContext
+from pyspark.mllib.classification import LogisticRegressionWithSGD
+from pyspark.mllib.classification import NaiveBayes
+from pyspark.mllib.classification import SVMWithSGD
+from pyspark.mllib.tree import DecisionTree
+from pyspark.mllib.regression import LabeledPoint
+from numpy import array
 import math
 import time
 
+#building Spark Configuration and Getiing a Spark Context and Loading Data into an RDD
+conf = (SparkConf().setMaster("local[8]").setAppName("bank_marketing_classification_logistic_regression").set("spark.executor.memory", "1g"))
+sc = SparkContext(conf = conf)
 
-testing_data = open("../data/poker-hand-training-true.data")
-training_data = open("../data/poker-hand-testing.data")
+testing_data = sc.textFile("../data/bank-additional-test-normalized.csv")
+training_data = sc.textFile("../data/bank-additional-train-normalized.csv")
 
 #parsing mapper function
 def mapper_CF(x):
 	z = str(x)
 	tokens = z.split(',')
 	c = len(tokens)
-	if c != 11:
+	if c != 21:
 		print "*********DATA VALIDATION ERROR\n***********8"
-	attrib = [int(y) for y in tokens]
-	x = attrib[0:10]
-	y = attrib[10]
-	return (x,y)
-
-def vectorize(fh):
-	samples = fh.readlines()
-	features = []
-	targets = []
-	for line in samples:
-		line = line[:-1]
-		(xi,yi) = mapper_CF(line)
-		xi = np.array(xi)
-		features.append(xi)
-		targets.append(yi)
-	
-	X = np.array(features)
-	y = np.array(targets)
-	return (X,y)
+	attrib = [float(y) for y in tokens]
+	return LabeledPoint(attrib[20],attrib[0:20])
 
 vectorize_start = time.time()
-vectorized_data = vectorize(training_data)
-vectorized_testing_data = vectorize(testing_data)
-training_data.close()
-testing_data.close()
+vectorized_data = training_data.map(mapper_CF)
+vectorized_testing_data = testing_data.map(mapper_CF)
+#a = vectorized_data.count() #spark issue
+#b = vectorized_testing_data.count()
+#print a, b
 vectorize_end = time.time()
 print "******************VECTORIZING: DONE********************"
 
 #building a logistic regression training model
 train_start = time.time()
-model = tree.DecisionTreeClassifier()
-model = model.fit(vectorized_data[0], vectorized_data[1])
+model = LogisticRegressionWithSGD.train(vectorized_data)
 train_end = time.time()
 print "******************MODEL TRAINING: DONE********************"
 
@@ -57,20 +48,14 @@ def mapper_predict(x):
 	return (actual_class, predicted_class)
 
 pred_start = time.time()
-predicted = model.predict(vectorized_testing_data[0])
-actual = vectorized_testing_data[1]
-actual_and_predicted = np.transpose(np.vstack((actual,predicted)))
-actual_and_predicted = actual_and_predicted.tolist()
+actual_and_predicted = vectorized_testing_data.cache().map(mapper_predict)
 pred_end = time.time()
 print "******************PREDICTION: DONE********************"
 
 #evaluation
 eval_start = time.time()
-samples_count = len(actual_and_predicted)
-training_error = len(filter(lambda (a, p): a != p, actual_and_predicted)) / float(samples_count)
-MSE_map = map(lambda (a, p): (a - p)**2,actual_and_predicted)
-MSE_reduce = reduce(lambda x, y: x + y, MSE_map)
-MSE = MSE_reduce / float(samples_count)
+training_error = actual_and_predicted.filter(lambda (a, p): a != p).count() / float(actual_and_predicted.count())
+MSE = actual_and_predicted.map(lambda (a, p): (a - p)**2).reduce(lambda x, y: x + y) / actual_and_predicted.count()
 RMSE = math.sqrt(MSE)
 eval_end = time.time()
 print "******************EVALUATION: DONE********************"
@@ -83,7 +68,7 @@ eval_time = eval_end - eval_start
 print "******************TIME CALCULATION: DONE********************"
 
 print "******************RESULTS********************"
-title = "***SEQUENTIAL DECISION TREE CLASSIFIER RESULTS***\n"
+title = "***SPARK LOGISTIC REGRESSION CLASSIFIER RESULTS***\n"
 accuracy = "##############Accuracy##################\n"
 train_err_res = ("Training Error = " + str(training_error)) + '\n'
 rmse_res = ("Mean Squared Error = " + str(RMSE)) + '\n'
@@ -96,7 +81,7 @@ eval_res = ("Evaluation TIme = " + str(eval_time)) + '\n'
 
 result = title + accuracy + train_err_res + rmse_res + efficiency + vectorize_res + train_res + pred_res + eval_res
 
-res_fh = open('../result/sequential_decision_tree_classifier_result.txt','w')
+res_fh = open('../result/spark_logistic_regression_classifier_result.txt','w')
 res_fh.write(result)
 res_fh.close()
 

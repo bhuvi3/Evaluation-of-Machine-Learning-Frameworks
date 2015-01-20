@@ -1,9 +1,0 @@
-***NAIVE BAYES CLASSIFIER RESULTS***
-##############Accuracy##################
-Training Error = 0.500479808077
-Mean Squared Error = 1.00365186851
-##############Efficiency################
-Vectorizing Time = 0.0
-Training TIme = 37.6050000191
-Predicting TIme = 0.00699996948242
-Evaluation TIme = 5.59299993515

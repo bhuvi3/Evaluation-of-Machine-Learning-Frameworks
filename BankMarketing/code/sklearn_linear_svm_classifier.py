@@ -1,39 +1,51 @@
-from pyspark import SparkConf, SparkContext
-from pyspark.mllib.classification import LogisticRegressionWithSGD
-from pyspark.mllib.classification import NaiveBayes
-from pyspark.mllib.classification import SVMWithSGD
-from pyspark.mllib.tree import DecisionTree
-from pyspark.mllib.regression import LabeledPoint
-from numpy import array
+from sklearn import svm
+import numpy as np
 import math
 import time
 
-#building Spark Configuration and Getiing a Spark Context and Loading Data into an RDD
-conf = (SparkConf().setMaster("local[8]").setAppName("poker_hand_classification_decision_tree").set("spark.executor.memory", "1g"))
-sc = SparkContext(conf = conf)
 
-testing_data = sc.textFile("../data/poker-hand-training-true.data")
-training_data = sc.textFile("../data/poker-hand-testing.data")
+testing_data = open("../data/bank-additional-test-normalized.csv")
+training_data = open("../data/bank-additional-train-normalized.csv")
 
 #parsing mapper function
 def mapper_CF(x):
 	z = str(x)
 	tokens = z.split(',')
 	c = len(tokens)
-	if c != 11:
+	if c != 21:
 		print "*********DATA VALIDATION ERROR\n***********8"
-	attrib = [int(y) for y in tokens]
-	return LabeledPoint(attrib[10],attrib[0:10])
+	attrib = [float(y) for y in tokens]
+	x = attrib[0:20]
+	y = attrib[20]
+	return (x,y)
+
+def vectorize(fh):
+	samples = fh.readlines()
+	features = []
+	targets = []
+	for line in samples:
+		line = line[:-1]
+		(xi,yi) = mapper_CF(line)
+		xi = np.array(xi)
+		features.append(xi)
+		targets.append(yi)
+	
+	X = np.array(features)
+	y = np.array(targets)
+	return (X,y)
 
 vectorize_start = time.time()
-vectorized_data = training_data.map(mapper_CF)
-vectorized_testing_data = testing_data.map(mapper_CF)
+vectorized_data = vectorize(training_data)
+vectorized_testing_data = vectorize(testing_data)
+training_data.close()
+testing_data.close()
 vectorize_end = time.time()
 print "******************VECTORIZING: DONE********************"
 
 #building a logistic regression training model
 train_start = time.time()
-model = DecisionTree.trainClassifier(vectorized_data.cache(), numClasses=10, categoricalFeaturesInfo={}, impurity='gini', maxDepth=5, maxBins=100)
+model = svm.LinearSVC()
+model = model.fit(vectorized_data[0], vectorized_data[1])
 train_end = time.time()
 print "******************MODEL TRAINING: DONE********************"
 
@@ -44,24 +56,21 @@ def mapper_predict(x):
 	actual_class = x.label
 	return (actual_class, predicted_class)
 
-"""
 pred_start = time.time()
-actual_and_predicted = vectorized_testing_data.map(mapper_predict)
-pred_end = time.time()
-"""
-
-pred_start = time.time()
-predictions = model.predict(vectorized_testing_data.cache().map(lambda x: x.features))
-actual_and_predicted = vectorized_testing_data.cache().map(lambda lp: lp.label).zip(predictions)
+predicted = model.predict(vectorized_testing_data[0])
+actual = vectorized_testing_data[1]
+actual_and_predicted = np.transpose(np.vstack((actual,predicted)))
+actual_and_predicted = actual_and_predicted.tolist()
 pred_end = time.time()
 print "******************PREDICTION: DONE********************"
-#actual_and_predicted.saveAsTextFile('../result/decision_tree_actual_predicted')
-
 
 #evaluation
 eval_start = time.time()
-training_error = actual_and_predicted.filter(lambda (a, p): a != p).count() / float(actual_and_predicted.count())
-MSE = actual_and_predicted.map(lambda (a, p): (a - p)**2).reduce(lambda x, y: x + y) / actual_and_predicted.count()
+samples_count = len(actual_and_predicted)
+training_error = len(filter(lambda (a, p): a != p, actual_and_predicted)) / float(samples_count)
+MSE_map = map(lambda (a, p): (a - p)**2,actual_and_predicted)
+MSE_reduce = reduce(lambda x, y: x + y, MSE_map)
+MSE = MSE_reduce / float(samples_count)
 RMSE = math.sqrt(MSE)
 eval_end = time.time()
 print "******************EVALUATION: DONE********************"
@@ -74,7 +83,7 @@ eval_time = eval_end - eval_start
 print "******************TIME CALCULATION: DONE********************"
 
 print "******************RESULTS********************"
-title = "***DECISION TREE CLASSIFIER RESULTS***\n"
+title = "***SKLEARN LINEAR SVM CLASSIFIER RESULTS***\n"
 accuracy = "##############Accuracy##################\n"
 train_err_res = ("Training Error = " + str(training_error)) + '\n'
 rmse_res = ("Mean Squared Error = " + str(RMSE)) + '\n'
@@ -87,11 +96,12 @@ eval_res = ("Evaluation TIme = " + str(eval_time)) + '\n'
 
 result = title + accuracy + train_err_res + rmse_res + efficiency + vectorize_res + train_res + pred_res + eval_res
 
-res_fh = open('../result/decision_tree_classifier_result.txt','w')
+res_fh = open('../result/sklearn_linear_svm_classifier_result.txt','w')
 res_fh.write(result)
 res_fh.close()
 
-print "\n##############Accuracy##################\n"
+print title
+print "\n##############Accuracy##################"
 print("Training Error (Mean Absolute Error) = " + str(training_error))
 print("Root Mean Squared Error = " + str(RMSE))
 print "########################################"

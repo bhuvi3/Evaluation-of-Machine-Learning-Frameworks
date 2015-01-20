@@ -1,22 +1,22 @@
-from sklearn import naive_bayes
+from sklearn.linear_model import LogisticRegression
 import numpy as np
 import math
 import time
 
 
-testing_data = open("../data/poker-hand-training-true.data")
-training_data = open("../data/poker-hand-testing.data")
+testing_data = open("../data/bank-additional-test-normalized.csv")
+training_data = open("../data/bank-additional-train-normalized.csv")
 
 #parsing mapper function
 def mapper_CF(x):
 	z = str(x)
 	tokens = z.split(',')
 	c = len(tokens)
-	if c != 11:
+	if c != 21:
 		print "*********DATA VALIDATION ERROR\n***********8"
-	attrib = [int(y) for y in tokens]
-	x = attrib[0:10]
-	y = attrib[10]
+	attrib = [float(y) for y in tokens]
+	x = attrib[0:20]
+	y = attrib[20]
 	return (x,y)
 
 def vectorize(fh):
@@ -44,7 +44,7 @@ print "******************VECTORIZING: DONE********************"
 
 #building a logistic regression training model
 train_start = time.time()
-model = naive_bayes.MultinomialNB()
+model = LogisticRegression()
 model = model.fit(vectorized_data[0], vectorized_data[1])
 train_end = time.time()
 print "******************MODEL TRAINING: DONE********************"
@@ -83,7 +83,7 @@ eval_time = eval_end - eval_start
 print "******************TIME CALCULATION: DONE********************"
 
 print "******************RESULTS********************"
-title = "***SEQUENTIAL NAIVE BAYES CLASSIFIER RESULTS***\n"
+title = "***SKLEARN LOGISTIC REGRESSION CLASSIFIER RESULTS***\n"
 accuracy = "##############Accuracy##################\n"
 train_err_res = ("Training Error = " + str(training_error)) + '\n'
 rmse_res = ("Mean Squared Error = " + str(RMSE)) + '\n'
@@ -96,7 +96,7 @@ eval_res = ("Evaluation TIme = " + str(eval_time)) + '\n'
 
 result = title + accuracy + train_err_res + rmse_res + efficiency + vectorize_res + train_res + pred_res + eval_res
 
-res_fh = open('../result/sequential_naive_bayes_classifier_result.txt','w')
+res_fh = open('../result/sklearn_logistic_regression_classifier_result.txt','w')
 res_fh.write(result)
 res_fh.close()
 

@@ -12,8 +12,8 @@ import time
 conf = (SparkConf().setMaster("local[8]").setAppName("bank_marketing_classification_linear_svm").set("spark.executor.memory", "1g"))
 sc = SparkContext(conf = conf)
 
-testing_data = sc.textFile("../data/bank-additional-sample-normalized.csv")
-training_data = sc.textFile("../data/bank-additional-full-normalized.csv")
+testing_data = sc.textFile("../data/bank-additional-test-normalized.csv")
+training_data = sc.textFile("../data/bank-additional-train-normalized.csv")
 
 #parsing mapper function
 def mapper_CF(x):
@@ -65,7 +65,7 @@ eval_time = eval_end - eval_start
 print "******************TIME CALCULATION: DONE********************"
 
 print "******************RESULTS********************"
-title = "***LINEAR SVM CLASSIFIER RESULTS***\n"
+title = "***SPARK LINEAR SVM CLASSIFIER RESULTS***\n"
 accuracy = "##############Accuracy##################\n"
 train_err_res = ("Training Error = " + str(training_error)) + '\n'
 rmse_res = ("Mean Squared Error = " + str(RMSE)) + '\n'
@@ -78,7 +78,7 @@ eval_res = ("Evaluation TIme = " + str(eval_time)) + '\n'
 
 result = title + accuracy + train_err_res + rmse_res + efficiency + vectorize_res + train_res + pred_res + eval_res
 
-res_fh = open('../result/linear_svm_classifier_result.txt','w')
+res_fh = open('../spark_result/linear_svm_classifier_result.txt','w')
 res_fh.write(result)
 res_fh.close()
 

@@ -12,9 +12,13 @@ import time
 conf = (SparkConf().setMaster("local[8]").setAppName("higgs_classification_linear_svm").set("spark.executor.memory", "1g"))
 sc = SparkContext(conf = conf)
 
+"""
 testing_data = sc.textFile("../data/higgs-testing.csv")
 #training_data = sc.textFile("../data/higgs-training.csv")
 training_data = sc.textFile("../data/higgs.csv")
+#"""
+testing_data = sc.textFile("../data/higgs-test.csv")
+training_data = sc.textFile("../data/higgs-train.csv")
 
 #parsing mapper function
 def mapper_CF(x):
@@ -83,7 +87,7 @@ eval_res = ("Evaluation TIme = " + str(eval_time)) + '\n'
 
 result = title + accuracy + train_err_res + rmse_res + efficiency + vectorize_res + train_res + pred_res + eval_res
 
-res_fh = open('../result/linear_svm_classifier_result.txt','w')
+res_fh = open('../result/NEW_PROPER_linear_svm_classifier_result.txt','w')
 res_fh.write(result)
 res_fh.close()
 
